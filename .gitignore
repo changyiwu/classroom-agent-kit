@@ -6,3 +6,5 @@ credentials.json
 .env
 *.log
 package-lock.json
+scratch/
+
