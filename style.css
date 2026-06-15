@@ -1456,31 +1456,63 @@ input[type="number"]:focus, input[type="text"]:focus, textarea:focus {
   
   .sidebar {
     width: 100vw;
+    box-sizing: border-box;
     height: auto;
     border-right: none;
     border-bottom: 1px solid var(--border-glass);
-    padding: 16px;
+    padding: 12px 16px;
+    display: grid;
+    grid-template-areas: 
+      "logo footer"
+      "menu menu";
+    grid-template-columns: 1fr auto;
+    gap: 12px;
   }
   
   .logo-area {
-    padding-bottom: 12px;
-    margin-bottom: 12px;
+    grid-area: logo;
+    border-bottom: none;
+    margin-bottom: 0;
+    padding: 0;
+    align-items: center;
+  }
+  
+  .sidebar-footer {
+    grid-area: footer;
+    border-top: none;
+    padding-top: 0;
+    margin-top: 0;
+    display: flex;
+    align-items: center;
+  }
+  
+  .footer-btn {
+    width: auto;
+    padding: 8px 14px;
+    font-size: 13px;
   }
   
   .nav-menu {
+    grid-area: menu;
     flex-direction: row;
     overflow-x: auto;
     gap: 8px;
     padding-bottom: 4px;
+    scrollbar-width: none;
+  }
+  
+  .nav-menu::-webkit-scrollbar {
+    display: none;
   }
   
   .nav-btn {
-    padding: 10px 16px;
+    padding: 8px 16px;
     white-space: nowrap;
   }
   
-  .sidebar-footer {
-    display: none; /* Hide roster shortcut from sidebar in tablet/mobile, we can place a trigger somewhere else or user can rotate */
+  .content-area {
+    height: auto;
+    overflow-y: visible;
   }
   
   .top-header {
