@@ -1,117 +1,117 @@
 # Google Classroom Agent & Web Sync Kit 🔗
 
-This kit contains a dual-channel integration system for Google Classroom:
-1. **Web Frontend Synchronization**: Client-side Google OAuth 2.0 (Google Identity Services) for multi-account compatibility without server session conflicts.
-2. **Terminal CLI Control**: A Node.js command-line interface (`classroom-cli`) allowing local AI coding assistants (like Antigravity, Claude Code, Cline, etc.) to list courses, import student rosters, list coursework, and post announcements directly from the chat prompt.
+本工具包提供 Google Classroom 的雙軌整合系統：
+1. **網頁前端同步**：以純前端 Google OAuth 2.0（Google Identity Services）完成授權，支援多帳號切換而不會產生伺服器 session 衝突。
+2. **終端機 CLI 控制**：一支 Node.js 命令列工具（`classroom-cli`），讓本機 AI coding agent（如 Antigravity、Claude Code、Cline 等）可以直接在對話中列出課程、匯入學生名冊、列出作業與發布公告。
 
 ---
 
-## 📂 Project Structure
+## 📂 專案結構
 
 ```
-├── index.html          # Web UI with integrated Google Classroom login popup
-├── app.js              # Client-side OAuth flow and Classroom REST API calling logic
-├── style.css           # Styling guidelines for the Classroom panels
-├── classroom-cli.js    # CLI Script for local API interaction
-└── package.json        # Node.js dependencies and bin path mapping
+├── index.html          # 網頁介面，內含 Google Classroom 登入彈出視窗
+├── app.js              # 前端 OAuth 流程與 Classroom REST API 呼叫邏輯
+├── style.css           # Classroom 面板的樣式規範
+├── classroom-cli.js    # 本機 API 操作的 CLI 腳本
+└── package.json        # Node.js 相依套件與 bin 路徑對應
 ```
 
 ---
 
-## ⚙️ Google Cloud Platform Configuration (For Setup)
+## ⚙️ Google Cloud Platform 設定（初次安裝）
 
-To use either the web interface or the CLI command, you must configure credentials in the [Google Cloud Console](https://console.cloud.google.com/):
+不論要使用網頁介面或 CLI 指令，都必須先在 [Google Cloud Console](https://console.cloud.google.com/) 設定憑證：
 
-### 1. Enable Classroom API
-- Search for `Google Classroom API` in your project search bar and click **Enable**.
-- Go to `OAuth Consent Screen` (OAuth 同意畫面) -> Select **External** -> Add your test Google accounts in **Test Users** (important for developer status).
-- Ensure scopes `classroom.courses.readonly`, `classroom.rosters.readonly`, and `classroom.announcements` (or `classroom.coursework.me` / `classroom.coursework.students` for coursework) are added.
+### 1. 啟用 Classroom API
+- 在專案搜尋列輸入 `Google Classroom API`，點選 **啟用**。
+- 前往 `OAuth 同意畫面`（OAuth Consent Screen）→ 選擇 **外部（External）** → 在 **測試使用者（Test Users）** 加入你要測試的 Google 帳號（開發者狀態下相當重要）。
+- 確認已加入 `classroom.courses.readonly`、`classroom.rosters.readonly` 與 `classroom.announcements` 等範圍（作業相關則需 `classroom.coursework.me` / `classroom.coursework.students`）。
 
-### 2. OAuth Credentials Setup
+### 2. 建立 OAuth 憑證
 
-#### A. Web App Client ID (For Browser Sync)
-- Go to `Credentials` -> **Create Credentials** -> **OAuth client ID** -> select **Web application**.
-- Under **Authorized JavaScript origins**, add your local address (`http://localhost:5500`) and your production Netlify address (`https://your-app.netlify.app`).
-- Copy the generated Web Client ID and paste it in the Web UI to sync.
+#### A. 網頁應用程式 Client ID（供瀏覽器同步使用）
+- 前往 `憑證` → **建立憑證** → **OAuth 用戶端 ID** → 選擇 **網頁應用程式**。
+- 在 **已授權的 JavaScript 來源** 加入你的本機位址（`http://localhost:5500`）與正式的 Netlify 位址（`https://your-app.netlify.app`）。
+- 複製產生的網頁版 Client ID，貼到網頁介面中即可同步。
 
-#### B. Desktop App Client ID (For CLI Control)
-- Go to `Credentials` -> **Create Credentials** -> **OAuth client ID** -> select **Desktop application**.
-- Save the client ID. Download the generated credentials JSON.
-- Rename the downloaded JSON file to **`credentials.json`** and save it in the same directory as `classroom-cli.js`.
+#### B. 桌面應用程式 Client ID（供 CLI 控制使用）
+- 前往 `憑證` → **建立憑證** → **OAuth 用戶端 ID** → 選擇 **桌面應用程式**。
+- 記下 client ID，並下載產生的憑證 JSON 檔。
+- 將下載的 JSON 檔改名為 **`credentials.json`**，存放在與 `classroom-cli.js` 相同的目錄下。
 
 ---
 
-## 💻 Web App OAuth Flow Integration (`app.js`)
+## 💻 網頁端 OAuth 流程整合（`app.js`）
 
-The web app integrates with the new **Google Identity Services (GIS)** to request authorization tokens directly in-browser. This avoids browser session conflicts when teachers are signed into multiple Google accounts.
+網頁端整合新版 **Google Identity Services（GIS）**，直接在瀏覽器內請求授權 token，可避免老師同時登入多個 Google 帳號時發生的瀏覽器 session 衝突。
 
 ```javascript
 let googleAccessToken = null;
 
-// Initialize GIS Token client
+// 初始化 GIS Token client
 const tokenClient = google.accounts.oauth2.initTokenClient({
   client_id: "YOUR_GOOGLE_CLIENT_ID",
   scope: "https://www.googleapis.com/auth/classroom.courses.readonly https://www.googleapis.com/auth/classroom.rosters.readonly",
   callback: (tokenResponse) => {
     if (tokenResponse && tokenResponse.access_token) {
       googleAccessToken = tokenResponse.access_token;
-      // You can now query endpoints using Authorization headers
+      // 之後即可用 Authorization 標頭呼叫各個 API 端點
     }
   }
 });
 
-// Trigger login popup
+// 觸發登入彈出視窗
 tokenClient.requestAccessToken({ prompt: "consent" });
 ```
 
 ---
 
-## ⌨️ CLI Agent Tool Installation & Usage
+## ⌨️ CLI 工具安裝與使用
 
-You can link the script globally to let your terminal or coding agents execute commands anywhere.
+你可以把腳本連結成全域指令，讓終端機或 coding agent 在任何位置都能執行。
 
-### 1. Installation
-Install Node.js dependencies:
+### 1. 安裝
+安裝 Node.js 相依套件：
 ```bash
 npm install
 ```
 
-### 2. Global Symlink
-Create a global symlink on your local machine:
+### 2. 建立全域連結
+在本機建立全域 symlink：
 ```bash
 npm link
 ```
 
-### 3. CLI Commands
-Run commands directly from the terminal. If you are using an AI Agent, the agent can call these commands to fetch info or write updates on your behalf:
+### 3. CLI 指令
+直接在終端機執行下列指令；若使用 AI Agent，Agent 也能代你呼叫這些指令來查詢資訊或寫入更新：
 
-* **Authentication (Run Once)**:
+* **授權（只需執行一次）**：
   ```bash
   classroom-cli auth
   ```
-  *(Opens the browser to request login. Saves OAuth access tokens to `token.json`)*
+  *（會開啟瀏覽器要求登入，並把 OAuth access token 存入 `token.json`）*
 
-* **List Active Courses**:
+* **列出進行中的課程**：
   ```bash
   classroom-cli list-courses
   ```
 
-* **List Course Student Roster**:
+* **列出課程學生名冊**：
   ```bash
   classroom-cli list-students <courseId>
   ```
 
-* **Create a Course Assignment**:
+* **建立課程作業**：
   ```bash
-  classroom-cli create-assignment <courseId> "Assignment Title" "Assignment Instructions/Description"
+  classroom-cli create-assignment <courseId> "作業標題" "作業說明／描述"
   ```
 
-* **Post a Stream Announcement**:
+* **發布訊息串公告**：
   ```bash
-  classroom-cli post-announcement <courseId> "Announcement Text"
+  classroom-cli post-announcement <courseId> "公告內容"
   ```
 
-* **List Course Assignments (Coursework)**:
+* **列出課程作業（Coursework）**：
   ```bash
   classroom-cli list-coursework <courseId>
   ```
